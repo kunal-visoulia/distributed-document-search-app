@@ -14,14 +14,13 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Document CRUD operations.
+ * Document CRUD operations against OpenSearch.
  *
  * Prototype: writes directly to OpenSearch (synchronous).
- * Production: POST and DELETE would publish to Kafka instead.
- *             Consumer (Flink) does the actual OpenSearch write.
+ * Production: POST/DELETE publish to Kafka. Consumer (Flink) does the actual write.
  *
- * Uses ElasticsearchOperations (not ElasticsearchRepository)
- * because we need dynamic index resolution per tenant.
+ * Uses ElasticsearchOperations (not ElasticsearchRepository) because
+ * we need dynamic index resolution per tenant.
  */
 @Service
 @RequiredArgsConstructor
@@ -33,17 +32,13 @@ public class DocumentService {
     private final CacheService cache;
 
     /**
-     * POST /documents
-     *
-     * Prototype: write to OpenSearch directly, return 201.
+     * Create and index a document.
      * Production: generate ID → publish to Kafka → return 202.
-     *             Consumer does PUT /docs_{tenant}/_doc/{id} (idempotent upsert).
+     * Consumer does PUT /docs_{tenant}/_doc/{id} (idempotent upsert).
      */
     public DocumentResponse create(String tenantId, CreateDocumentRequest req) {
         IndexCoordinates index = tenantIndex.resolveIndex(tenantId);
 
-        // UUID v7 would be ideal (time-ordered, better OS indexing throughput)
-        // Using UUID v4 with prefix for prototype simplicity
         String docId = "doc_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
 
         DocumentEntity doc = DocumentEntity.builder()
@@ -60,24 +55,18 @@ public class DocumentService {
         esOps.save(doc, index);
         log.info("Indexed document {} in {}", docId, index.getIndexName());
 
-        // Invalidate search cache for this tenant
         cache.invalidateSearchCache(tenantId);
 
         return DocumentResponse.from(doc, tenantId);
     }
 
     /**
-     * GET /documents/{id}
-     *
-     * Reads from OpenSearch translog (strongly consistent).
-     * Cached in Redis (TTL 5min).
+     * Get document by ID. OpenSearch GET reads from translog (strongly consistent).
      */
     public DocumentResponse getById(String tenantId, String docId) {
-        // Check cache
         var cached = cache.getDocument(tenantId, docId, DocumentResponse.class);
         if (cached.isPresent()) return cached.get();
 
-        // Query OpenSearch
         IndexCoordinates index = tenantIndex.resolveIndex(tenantId);
         DocumentEntity doc = esOps.get(docId, DocumentEntity.class, index);
         if (doc == null) throw new DocumentNotFoundException(docId);
@@ -88,28 +77,21 @@ public class DocumentService {
     }
 
     /**
-     * DELETE /documents/{id}
-     *
-     * Prototype: delete from OpenSearch directly.
-     * Production: invalidate doc cache → publish to Kafka → return 202.
-     *             Consumer does DELETE + INCR generation.
+     * Delete document. Production: invalidate doc cache → publish to Kafka → 202.
+     * Consumer handles actual OpenSearch delete + search cache invalidation.
      */
     public DocumentResponse delete(String tenantId, String docId) {
         IndexCoordinates index = tenantIndex.resolveIndex(tenantId);
 
-        // Verify exists
         DocumentEntity doc = esOps.get(docId, DocumentEntity.class, index);
         if (doc == null) throw new DocumentNotFoundException(docId);
 
-        // Delete from OpenSearch
         esOps.delete(docId, index);
         log.info("Deleted document {} from {}", docId, index.getIndexName());
 
-        // Invalidate caches
         cache.invalidateDocument(tenantId, docId);
         cache.invalidateSearchCache(tenantId);
 
-        return DocumentResponse.builder()
-                .id(docId).tenantId(tenantId).build();
+        return DocumentResponse.builder().id(docId).tenantId(tenantId).build();
     }
 }

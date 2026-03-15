@@ -3,21 +3,20 @@ package com.docsearch.filter;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 /**
- * Extracts X-Tenant-Id header from every request.
+ * Extracts and validates X-Tenant-Id header.
  *
  * Production: Kong validates JWT, extracts tenant_id from claims,
- * sets X-Tenant-Id (overwrites client value). Service trusts it.
- *
- * Prototype: Client provides header directly. Validated for format.
+ * sets X-Tenant-Id header (client cannot forge it).
+ * Prototype: Client provides header directly.
  */
-@Component @Order(1) @Slf4j
+@Component
+@Order(1)
 public class TenantFilter implements Filter {
 
     public static final String TENANT_HEADER = "X-Tenant-Id";
@@ -30,10 +29,13 @@ public class TenantFilter implements Filter {
         HttpServletResponse httpRes = (HttpServletResponse) res;
         String path = httpReq.getRequestURI();
 
-        if (path.startsWith("/api/v1/health") || path.startsWith("/actuator")) {
+        if (path.startsWith("/api/v1/health") || path.startsWith("/actuator")
+                || path.startsWith("/swagger") || path.startsWith("/api-docs")
+                || path.startsWith("/v3/api-docs")) {
             chain.doFilter(req, res);
             return;
         }
+
         if (path.startsWith("/api/")) {
             String tenantId = httpReq.getHeader(TENANT_HEADER);
             if (tenantId == null || tenantId.isBlank()) {

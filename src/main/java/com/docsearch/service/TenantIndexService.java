@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * Single place in the codebase that constructs index names.
- * All services call resolveIndex(tenantId) — never build index names themselves.
+ * Every other service calls resolveIndex(tenantId) — never builds index names directly.
  *
  * Naming: docs_{tenantId}
  * Creates index lazily on first request for a new tenant.

@@ -19,10 +19,13 @@ import java.util.Optional;
  * Keys:
  *   search:{tenant}:{generation}:{hash(query)}  TTL 60s
  *   doc:{tenant}:{docId}                         TTL 5min
- *   tenant_gen:{tenant}                          no TTL
+ *   tenant_gen:{tenant}                          No TTL
  *
  * On write/delete: INCR tenant_gen → old search keys orphaned, expire via TTL.
- * O(1) invalidation. No KEYS/SCAN needed.
+ * O(1) invalidation — no KEYS/SCAN needed.
+ *
+ * Graceful degradation: all ops wrapped in try-catch.
+ * If Redis is down, requests bypass cache and hit OpenSearch directly.
  */
 @Service
 @RequiredArgsConstructor
@@ -38,8 +41,6 @@ public class CacheService {
     @Value("${cache.document.ttl:300}")
     private int docTtl;
 
-    // ── Search cache ────────────────────────────────────────
-
     public <T> Optional<T> getSearchResult(String tenantId, String query, Class<T> type) {
         return getCached(searchKey(tenantId, query), type);
     }
@@ -47,8 +48,6 @@ public class CacheService {
     public void putSearchResult(String tenantId, String query, Object result) {
         putCached(searchKey(tenantId, query), result, Duration.ofSeconds(searchTtl));
     }
-
-    // ── Document cache ──────────────────────────────────────
 
     public <T> Optional<T> getDocument(String tenantId, String docId, Class<T> type) {
         return getCached(docKey(tenantId, docId), type);
@@ -58,14 +57,11 @@ public class CacheService {
         putCached(docKey(tenantId, docId), doc, Duration.ofSeconds(docTtl));
     }
 
-    // ── Invalidation ────────────────────────────────────────
-
     public void invalidateSearchCache(String tenantId) {
         try {
-            Long gen = redisTemplate.opsForValue().increment(genKey(tenantId));
-            log.debug("Cache generation for tenant {} → {}", tenantId, gen);
+            redisTemplate.opsForValue().increment(genKey(tenantId));
         } catch (Exception e) {
-            log.warn("Failed to increment generation: {}", e.getMessage());
+            log.warn("Failed to increment cache generation for tenant {}: {}", tenantId, e.getMessage());
         }
     }
 
@@ -77,19 +73,15 @@ public class CacheService {
         }
     }
 
-    // ── Helpers ──────────────────────────────────────────────
-
     private <T> Optional<T> getCached(String key, Class<T> type) {
         try {
             Object val = redisTemplate.opsForValue().get(key);
             if (val != null) {
-                log.debug("Cache HIT: {}", key);
                 return Optional.of(objectMapper.readValue(objectMapper.writeValueAsString(val), type));
             }
         } catch (Exception e) {
-            log.warn("Cache read error: {}", e.getMessage());
+            log.warn("Cache read error for key {}: {}", key, e.getMessage());
         }
-        log.debug("Cache MISS: {}", key);
         return Optional.empty();
     }
 
@@ -97,7 +89,7 @@ public class CacheService {
         try {
             redisTemplate.opsForValue().set(key, value, ttl);
         } catch (Exception e) {
-            log.warn("Cache write error: {}", e.getMessage());
+            log.warn("Cache write error for key {}: {}", key, e.getMessage());
         }
     }
 

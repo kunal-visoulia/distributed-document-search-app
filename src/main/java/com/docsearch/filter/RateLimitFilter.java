@@ -17,10 +17,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Per-tenant rate limiting using token bucket.
- * Prototype: in-memory. Production: Kong rate-limiting plugin + Redis.
+ * Per-tenant rate limiting using token bucket algorithm.
+ * Prototype: in-memory buckets (single instance).
+ * Production: Kong rate-limiting plugin backed by Redis.
  */
-@Component @Order(2) @Slf4j
+@Component
+@Order(2)
+@Slf4j
 public class RateLimitFilter implements Filter {
 
     @Value("${ratelimit.requests-per-second:100}")

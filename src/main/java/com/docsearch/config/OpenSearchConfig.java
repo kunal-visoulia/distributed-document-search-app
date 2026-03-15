@@ -7,6 +7,11 @@ import org.opensearch.data.client.orhlc.RestClients;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Configures the OpenSearch RestHighLevelClient.
+ * Extending AbstractOpenSearchConfiguration auto-creates the
+ * ElasticsearchOperations bean used by DocumentService and TenantIndexService.
+ */
 @Configuration
 public class OpenSearchConfig extends AbstractOpenSearchConfiguration {
 

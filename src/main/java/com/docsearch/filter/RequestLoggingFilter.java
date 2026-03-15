@@ -11,7 +11,14 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.UUID;
 
-@Component @Order(0) @Slf4j
+/**
+ * Generates a correlation ID for every request and logs method, path,
+ * tenant, status, and duration. In production, this ID propagates
+ * through Kafka message headers for end-to-end tracing.
+ */
+@Component
+@Order(0)
+@Slf4j
 public class RequestLoggingFilter implements Filter {
 
     @Override
@@ -21,7 +28,9 @@ public class RequestLoggingFilter implements Filter {
         HttpServletResponse httpRes = (HttpServletResponse) res;
 
         String corrId = httpReq.getHeader("X-Correlation-Id");
-        if (corrId == null || corrId.isBlank()) corrId = UUID.randomUUID().toString().substring(0, 8);
+        if (corrId == null || corrId.isBlank()) {
+            corrId = UUID.randomUUID().toString().substring(0, 8);
+        }
 
         MDC.put("correlationId", corrId);
         httpRes.setHeader("X-Correlation-Id", corrId);

@@ -17,6 +17,20 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+/**
+ * Full-text search using OpenSearch RestHighLevelClient directly.
+ *
+ * Features:
+ * - BM25 relevance scoring with title boosted 3x
+ * - Fuzzy matching (typo tolerance via fuzziness=AUTO)
+ * - Highlighting on title and content
+ * - Faceted aggregations on docType and tags
+ * - Source filtering (content excluded from results)
+ *
+ * Uses RestHighLevelClient (not ElasticsearchOperations) because
+ * ElasticsearchOperations doesn't support highlighting, aggregations,
+ * or custom scoring parameters.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -27,7 +41,6 @@ public class SearchService {
     private final CacheService cache;
 
     public SearchResponse search(String tenantId, String query) {
-
         var cached = cache.getSearchResult(tenantId, query, SearchResponse.class);
         if (cached.isPresent()) return cached.get();
 
@@ -38,7 +51,6 @@ public class SearchService {
             tenantIndex.resolveIndex(tenantId);
 
             BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-
             if (query != null && !query.isBlank()) {
                 boolQuery.must(QueryBuilders.multiMatchQuery(query, "title", "content")
                         .field("title", 3.0f)
@@ -68,6 +80,7 @@ public class SearchService {
             List<SearchHit> hits = new ArrayList<>();
             for (org.opensearch.search.SearchHit hit : osResponse.getHits().getHits()) {
                 Map<String, Object> source = hit.getSourceAsMap();
+
                 Map<String, List<String>> highlights = new HashMap<>();
                 if (hit.getHighlightFields() != null) {
                     hit.getHighlightFields().forEach((field, highlight) -> {
@@ -112,7 +125,7 @@ public class SearchService {
             return result;
 
         } catch (Exception e) {
-            log.error("Search error tenant={} query='{}': {}", tenantId, query, e.getMessage(), e);
+            log.error("Search failed for tenant={} query='{}': {}", tenantId, query, e.getMessage());
             throw new RuntimeException("Search failed: " + e.getMessage(), e);
         }
     }
@@ -127,7 +140,7 @@ public class SearchService {
                         result.put(bucket.getKeyAsString(), bucket.getDocCount()));
             }
         } catch (Exception e) {
-            log.warn("Aggregation {} extraction failed: {}", aggName, e.getMessage());
+            log.warn("Failed to extract aggregation '{}': {}", aggName, e.getMessage());
         }
         return result;
     }

@@ -9,11 +9,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Document entity stored in OpenSearch (primary data store).
- * One index per tenant: docs_{tenantId}
+ * OpenSearch document mapping. One index per tenant: docs_{tenantId}.
  *
- * The @Document annotation sets a default index for Spring Data.
- * Actual index is resolved dynamically by TenantIndexService.
+ * - title: Text (searchable) + Keyword sub-field (sortable/aggregatable)
+ * - content: Text only (searchable, not aggregatable)
+ * - metadata: Stored but NOT indexed (saves memory, prevents mapping explosion)
+ * - tags/docType: Keyword (exact match, filterable, aggregatable)
  */
 @org.springframework.data.elasticsearch.annotations.Document(indexName = "documents")
 @Setting(shards = 1, replicas = 0)
@@ -24,8 +25,8 @@ public class DocumentEntity {
     private String id;
 
     @MultiField(
-        mainField = @Field(type = FieldType.Text, analyzer = "standard"),
-        otherFields = @InnerField(suffix = "raw", type = FieldType.Keyword)
+            mainField = @Field(type = FieldType.Text, analyzer = "standard"),
+            otherFields = @InnerField(suffix = "raw", type = FieldType.Keyword)
     )
     private String title;
 

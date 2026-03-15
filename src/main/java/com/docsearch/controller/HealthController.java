@@ -1,8 +1,11 @@
 package com.docsearch.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.action.admin.cluster.health.ClusterHealthRequest;
+import org.opensearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestHighLevelClient;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -17,22 +20,22 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Health", description = "Service health check")
 public class HealthController {
 
-    private final RestHighLevelClient esClient;
+    private final RestHighLevelClient osClient;
     private final RedisTemplate<String, Object> redisTemplate;
 
+    @Operation(summary = "Health check with dependency status")
     @GetMapping("/api/v1/health")
     public ResponseEntity<Map<String, Object>> health() {
         Map<String, Object> deps = new LinkedHashMap<>();
         boolean allHealthy = true;
 
-        // OpenSearch
         deps.put("opensearch", checkOpenSearch());
         if (!"healthy".equals(((Map<?, ?>) deps.get("opensearch")).get("status")))
             allHealthy = false;
 
-        // Redis
         deps.put("redis", checkRedis());
         if (!"healthy".equals(((Map<?, ?>) deps.get("redis")).get("status")))
             allHealthy = false;
@@ -48,12 +51,15 @@ public class HealthController {
     private Map<String, Object> checkOpenSearch() {
         long start = System.currentTimeMillis();
         try {
-            var health = esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
-            return Map.of("status", "healthy",
+            ClusterHealthResponse health = osClient.cluster()
+                    .health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
+            return Map.of(
+                    "status", "healthy",
                     "latencyMs", System.currentTimeMillis() - start,
                     "cluster", health.getStatus().name().toLowerCase());
         } catch (Exception e) {
-            return Map.of("status", "unhealthy",
+            return Map.of(
+                    "status", "unhealthy",
                     "latencyMs", System.currentTimeMillis() - start,
                     "details", e.getMessage() != null ? e.getMessage() : "Connection failed");
         }
@@ -63,10 +69,12 @@ public class HealthController {
         long start = System.currentTimeMillis();
         try {
             redisTemplate.getConnectionFactory().getConnection().commands().ping();
-            return Map.of("status", "healthy",
+            return Map.of(
+                    "status", "healthy",
                     "latencyMs", System.currentTimeMillis() - start);
         } catch (Exception e) {
-            return Map.of("status", "unhealthy",
+            return Map.of(
+                    "status", "unhealthy",
                     "latencyMs", System.currentTimeMillis() - start,
                     "details", e.getMessage() != null ? e.getMessage() : "Connection failed");
         }
