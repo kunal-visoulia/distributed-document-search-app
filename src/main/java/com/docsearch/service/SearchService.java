@@ -15,6 +15,7 @@ import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -96,6 +97,11 @@ public class SearchService {
                 List<String> tags = source.get("tags") != null
                         ? (List<String>) source.get("tags") : null;
 
+                Instant createdAt = null;
+                if (source.get("createdAt") != null) {
+                    createdAt = Instant.ofEpochMilli(Long.parseLong(source.get("createdAt").toString()));
+                }
+
                 hits.add(SearchHit.builder()
                         .id(hit.getId())
                         .title(source.get("title") != null ? source.get("title").toString() : null)
@@ -103,6 +109,7 @@ public class SearchService {
                         .highlights(highlights)
                         .tags(tags)
                         .docType(source.get("docType") != null ? source.get("docType").toString() : null)
+                        .createdAt(createdAt)
                         .build());
             }
 
