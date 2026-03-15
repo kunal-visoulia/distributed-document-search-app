@@ -10,7 +10,7 @@ import java.io.IOException;
 
 /**
  * Extracts and validates X-Tenant-Id header.
- *
+ * <p>
  * Production: Kong validates JWT, extracts tenant_id from claims,
  * sets X-Tenant-Id header (client cannot forge it).
  * Prototype: Client provides header directly.

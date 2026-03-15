@@ -15,10 +15,10 @@ import java.util.UUID;
 
 /**
  * Document CRUD operations against OpenSearch.
- *
+ * <p>
  * Prototype: writes directly to OpenSearch (synchronous).
  * Production: POST/DELETE publish to Kafka. Consumer (Flink) does the actual write.
- *
+ * <p>
  * Uses ElasticsearchOperations (not ElasticsearchRepository) because
  * we need dynamic index resolution per tenant.
  */

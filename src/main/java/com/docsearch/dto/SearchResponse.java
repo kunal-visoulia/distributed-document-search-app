@@ -1,11 +1,16 @@
 package com.docsearch.dto;
 
 import lombok.*;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class SearchResponse {
     private String query;
     private long totalHits;
@@ -13,7 +18,11 @@ public class SearchResponse {
     private List<SearchHit> results;
     private Map<String, Map<String, Long>> facets;
 
-    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
     public static class SearchHit {
         private String id;
         private String title;

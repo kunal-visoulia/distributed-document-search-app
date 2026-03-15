@@ -7,7 +7,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class DocumentResponse {
     private String id;
     private String tenantId;

@@ -15,15 +15,15 @@ import java.util.Optional;
 
 /**
  * Redis cache with generation-based invalidation.
- *
+ * <p>
  * Keys:
- *   search:{tenant}:{generation}:{hash(query)}  TTL 60s
- *   doc:{tenant}:{docId}                         TTL 5min
- *   tenant_gen:{tenant}                          No TTL
- *
+ * search:{tenant}:{generation}:{hash(query)}  TTL 60s
+ * doc:{tenant}:{docId}                         TTL 5min
+ * tenant_gen:{tenant}                          No TTL
+ * <p>
  * On write/delete: INCR tenant_gen → old search keys orphaned, expire via TTL.
  * O(1) invalidation — no KEYS/SCAN needed.
- *
+ * <p>
  * Graceful degradation: all ops wrapped in try-catch.
  * If Redis is down, requests bypass cache and hit OpenSearch directly.
  */

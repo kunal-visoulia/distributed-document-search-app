@@ -10,7 +10,7 @@ import java.util.Map;
 
 /**
  * OpenSearch document mapping. One index per tenant: docs_{tenantId}.
- *
+ * <p>
  * - title: Text (searchable) + Keyword sub-field (sortable/aggregatable)
  * - content: Text only (searchable, not aggregatable)
  * - metadata: Stored but NOT indexed (saves memory, prevents mapping explosion)
@@ -18,7 +18,11 @@ import java.util.Map;
  */
 @org.springframework.data.elasticsearch.annotations.Document(indexName = "documents")
 @Setting(shards = 1, replicas = 0)
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class DocumentEntity {
 
     @Id

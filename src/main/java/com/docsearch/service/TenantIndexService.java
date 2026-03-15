@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 /**
  * Single place in the codebase that constructs index names.
  * Every other service calls resolveIndex(tenantId) — never builds index names directly.
- *
+ * <p>
  * Naming: docs_{tenantId}
  * Creates index lazily on first request for a new tenant.
  */
@@ -20,8 +20,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class TenantIndexService {
 
-    private final ElasticsearchOperations esOps;
     private static final String PREFIX = "docs_";
+    private final ElasticsearchOperations esOps;
 
     public IndexCoordinates resolveIndex(String tenantId) {
         String indexName = PREFIX + tenantId;

@@ -20,14 +20,14 @@ import java.util.*;
 
 /**
  * Full-text search using OpenSearch RestHighLevelClient directly.
- *
+ * <p>
  * Features:
  * - BM25 relevance scoring with title boosted 3x
  * - Fuzzy matching (typo tolerance via fuzziness=AUTO)
  * - Highlighting on title and content
  * - Faceted aggregations on docType and tags
  * - Source filtering (content excluded from results)
- *
+ * <p>
  * Uses RestHighLevelClient (not ElasticsearchOperations) because
  * ElasticsearchOperations doesn't support highlighting, aggregations,
  * or custom scoring parameters.

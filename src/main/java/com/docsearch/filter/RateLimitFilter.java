@@ -26,13 +26,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class RateLimitFilter implements Filter {
 
+    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
     @Value("${ratelimit.requests-per-second:100}")
     private int rps;
-
     @Value("${ratelimit.burst-capacity:200}")
     private int burst;
-
-    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)

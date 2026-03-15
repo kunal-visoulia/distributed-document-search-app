@@ -1,6 +1,8 @@
 package com.docsearch.controller;
 
-import com.docsearch.dto.*;
+import com.docsearch.dto.CreateDocumentRequest;
+import com.docsearch.dto.DocumentResponse;
+import com.docsearch.dto.SearchResponse;
 import com.docsearch.service.DocumentService;
 import com.docsearch.service.SearchService;
 import io.swagger.v3.oas.annotations.Operation;

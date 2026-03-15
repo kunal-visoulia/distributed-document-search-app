@@ -7,7 +7,11 @@ import lombok.*;
 import java.util.List;
 import java.util.Map;
 
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class CreateDocumentRequest {
 
     @NotBlank(message = "Title is required")
