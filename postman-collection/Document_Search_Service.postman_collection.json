@@ -1,0 +1,1622 @@
+{
+  "info": {
+    "_postman_id": "14a001cc-8988-4d20-bb2c-cf68adcf1ba2",
+    "name": "Document Search Service — Demo Collection",
+    "description": "Complete demo of the Distributed Document Search Service prototype.\n\nRun requests in order (top to bottom) to demonstrate all features.\n\nPrerequisites: docker compose up --build",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "18877771"
+  },
+  "item": [
+    {
+      "name": "1. Health Check — Verify Dependencies",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Response is success', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql('success');",
+              "  pm.expect(body.data.dependencies.opensearch.status).to.eql('healthy');",
+              "  pm.expect(body.data.dependencies.redis.status).to.eql('healthy');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "1. Health Check — Verify Dependencies",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "25bc2d05"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 15 Mar 2026 14:02:03 GMT"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"success\",\n    \"message\": \"All dependencies healthy\",\n    \"timestamp\": \"2026-03-15T14:02:03.056402496Z\",\n    \"data\": {\n        \"serviceStatus\": \"healthy\",\n        \"uptimeSeconds\": 46,\n        \"dependencies\": {\n            \"opensearch\": {\n                \"status\": \"healthy\",\n                \"latencyMs\": 159,\n                \"cluster\": \"green\"\n            },\n            \"redis\": {\n                \"latencyMs\": 1033,\n                \"status\": \"healthy\"\n            }\n        }\n    }\n}"
+        }
+      ]
+    },
+    {
+      "name": "2a. Bulk Create Doc — tenant-acme",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Tenant-Id",
+            "value": "tenant-acme"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"documents\": [\n        {\n            \"title\": \"Q4 2025 Revenue Report\",\n            \"content\": \"The company achieved record revenue of $2.4 billion in Q4 2025, representing a 23% year-over-year growth. Cloud services division drove most of the growth with a 45% increase in annual recurring revenue.\",\n            \"docType\": \"report\",\n            \"tags\": [\"finance\", \"quarterly\", \"revenue\", \"cloud\"],\n            \"metadata\": {\"author\": \"Jane Smith\", \"department\": \"Finance\"}\n        },\n        {\n            \"title\": \"Q3 2025 Revenue Report\",\n            \"content\": \"Q3 revenue reached $2.1 billion with strong performance in cloud services and enterprise sales. The company expanded its customer base by 18%.\",\n            \"docType\": \"report\",\n            \"tags\": [\"finance\", \"quarterly\", \"revenue\"],\n            \"metadata\": {\"author\": \"Jane Smith\", \"department\": \"Finance\"}\n        },\n        {\n            \"title\": \"Annual Budget Forecast 2026\",\n            \"content\": \"The projected budget for 2026 allocates $800M to R&D, $400M to sales and marketing, and $200M to infrastructure. Cloud migration costs are expected to decrease by 25%.\",\n            \"docType\": \"report\",\n            \"tags\": [\"finance\", \"budget\", \"forecast\"],\n            \"metadata\": {\"author\": \"CFO Office\", \"department\": \"Finance\"}\n        },\n        {\n            \"title\": \"Microservices Architecture Migration Plan\",\n            \"content\": \"This document outlines the plan to migrate our monolithic application to a microservices architecture. Phase 1 involves decomposing the authentication and user management modules. We will use Kubernetes for orchestration and Resilience4j for circuit breakers.\",\n            \"docType\": \"technical\",\n            \"tags\": [\"architecture\", \"microservices\", \"migration\", \"kubernetes\"],\n            \"metadata\": {\"author\": \"Bob Johnson\", \"department\": \"Engineering\"}\n        },\n        {\n            \"title\": \"API Gateway Migration to Kong\",\n            \"content\": \"Details the migration from our custom API gateway to Kong Enterprise. Covers rate limiting, JWT validation, and request routing. Expected to reduce infrastructure costs by 30%.\",\n            \"docType\": \"technical\",\n            \"tags\": [\"architecture\", \"migration\", \"kong\"],\n            \"metadata\": {\"author\": \"Bob Johnson\", \"department\": \"Engineering\"}\n        },\n        {\n            \"title\": \"Database Sharding Strategy\",\n            \"content\": \"Proposes horizontal sharding of the user database across 8 shards using consistent hashing. Expected to handle 10x current traffic with sub-100ms query latency.\",\n            \"docType\": \"technical\",\n            \"tags\": [\"architecture\", \"database\", \"scaling\"],\n            \"metadata\": {\"author\": \"DBA Team\", \"department\": \"Engineering\"}\n        },\n        {\n            \"title\": \"Remote Work Policy 2026\",\n            \"content\": \"Employees may work remotely up to 3 days per week with manager approval. Core collaboration hours are 10 AM to 3 PM local timezone. Quarterly in-person gatherings are mandatory.\",\n            \"docType\": \"policy\",\n            \"tags\": [\"hr\", \"remote-work\", \"policy\"],\n            \"metadata\": {\"author\": \"HR Team\", \"department\": \"Human Resources\"}\n        },\n        {\n            \"title\": \"Annual Performance Review Guidelines\",\n            \"content\": \"All employees must complete annual performance reviews by December 15. Managers provide written feedback on achievements, growth areas, and goals for the next year.\",\n            \"docType\": \"policy\",\n            \"tags\": [\"hr\", \"policy\", \"review\"],\n            \"metadata\": {\"author\": \"HR Team\", \"department\": \"Human Resources\"}\n        }\n    ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/documents/bulk",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "documents",
+            "bulk"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "2a. Bulk Create Doc — tenant-acme",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "tenant-acme"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"documents\": [\n        {\n            \"title\": \"Q4 2025 Revenue Report\",\n            \"content\": \"The company achieved record revenue of $2.4 billion in Q4 2025, representing a 23% year-over-year growth. Cloud services division drove most of the growth with a 45% increase in annual recurring revenue.\",\n            \"docType\": \"report\",\n            \"tags\": [\"finance\", \"quarterly\", \"revenue\", \"cloud\"],\n            \"metadata\": {\"author\": \"Jane Smith\", \"department\": \"Finance\"}\n        },\n        {\n            \"title\": \"Q3 2025 Revenue Report\",\n            \"content\": \"Q3 revenue reached $2.1 billion with strong performance in cloud services and enterprise sales. The company expanded its customer base by 18%.\",\n            \"docType\": \"report\",\n            \"tags\": [\"finance\", \"quarterly\", \"revenue\"],\n            \"metadata\": {\"author\": \"Jane Smith\", \"department\": \"Finance\"}\n        },\n        {\n            \"title\": \"Annual Budget Forecast 2026\",\n            \"content\": \"The projected budget for 2026 allocates $800M to R&D, $400M to sales and marketing, and $200M to infrastructure. Cloud migration costs are expected to decrease by 25%.\",\n            \"docType\": \"report\",\n            \"tags\": [\"finance\", \"budget\", \"forecast\"],\n            \"metadata\": {\"author\": \"CFO Office\", \"department\": \"Finance\"}\n        },\n        {\n            \"title\": \"Microservices Architecture Migration Plan\",\n            \"content\": \"This document outlines the plan to migrate our monolithic application to a microservices architecture. Phase 1 involves decomposing the authentication and user management modules. We will use Kubernetes for orchestration and Resilience4j for circuit breakers.\",\n            \"docType\": \"technical\",\n            \"tags\": [\"architecture\", \"microservices\", \"migration\", \"kubernetes\"],\n            \"metadata\": {\"author\": \"Bob Johnson\", \"department\": \"Engineering\"}\n        },\n        {\n            \"title\": \"API Gateway Migration to Kong\",\n            \"content\": \"Details the migration from our custom API gateway to Kong Enterprise. Covers rate limiting, JWT validation, and request routing. Expected to reduce infrastructure costs by 30%.\",\n            \"docType\": \"technical\",\n            \"tags\": [\"architecture\", \"migration\", \"kong\"],\n            \"metadata\": {\"author\": \"Bob Johnson\", \"department\": \"Engineering\"}\n        },\n        {\n            \"title\": \"Database Sharding Strategy\",\n            \"content\": \"Proposes horizontal sharding of the user database across 8 shards using consistent hashing. Expected to handle 10x current traffic with sub-100ms query latency.\",\n            \"docType\": \"technical\",\n            \"tags\": [\"architecture\", \"database\", \"scaling\"],\n            \"metadata\": {\"author\": \"DBA Team\", \"department\": \"Engineering\"}\n        },\n        {\n            \"title\": \"Remote Work Policy 2026\",\n            \"content\": \"Employees may work remotely up to 3 days per week with manager approval. Core collaboration hours are 10 AM to 3 PM local timezone. Quarterly in-person gatherings are mandatory.\",\n            \"docType\": \"policy\",\n            \"tags\": [\"hr\", \"remote-work\", \"policy\"],\n            \"metadata\": {\"author\": \"HR Team\", \"department\": \"Human Resources\"}\n        },\n        {\n            \"title\": \"Annual Performance Review Guidelines\",\n            \"content\": \"All employees must complete annual performance reviews by December 15. Managers provide written feedback on achievements, growth areas, and goals for the next year.\",\n            \"docType\": \"policy\",\n            \"tags\": [\"hr\", \"policy\", \"review\"],\n            \"metadata\": {\"author\": \"HR Team\", \"department\": \"Human Resources\"}\n        }\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/documents/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documents",
+                "bulk"
+              ]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "d9f763ad"
+            },
+            {
+              "key": "X-RateLimit-Remaining",
+              "value": "199"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 15 Mar 2026 14:17:29 GMT"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"success\",\n    \"message\": \"8 documents indexed\",\n    \"timestamp\": \"2026-03-15T14:17:29.484987186Z\",\n    \"data\": [\n        {\n            \"id\": \"doc_fba8c4b1548a46f2\",\n            \"tenantId\": \"tenant-acme\",\n            \"title\": \"Q4 2025 Revenue Report\",\n            \"content\": \"The company achieved record revenue of $2.4 billion in Q4 2025, representing a 23% year-over-year growth. Cloud services division drove most of the growth with a 45% increase in annual recurring revenue.\",\n            \"docType\": \"report\",\n            \"tags\": [\n                \"finance\",\n                \"quarterly\",\n                \"revenue\",\n                \"cloud\"\n            ],\n            \"metadata\": {\n                \"author\": \"Jane Smith\",\n                \"department\": \"Finance\"\n            },\n            \"createdAt\": \"2026-03-15T14:17:29.077414092Z\",\n            \"updatedAt\": \"2026-03-15T14:17:29.077419393Z\"\n        },\n        {\n            \"id\": \"doc_aea9e72a7cdf4ab0\",\n            \"tenantId\": \"tenant-acme\",\n            \"title\": \"Q3 2025 Revenue Report\",\n            \"content\": \"Q3 revenue reached $2.1 billion with strong performance in cloud services and enterprise sales. The company expanded its customer base by 18%.\",\n            \"docType\": \"report\",\n            \"tags\": [\n                \"finance\",\n                \"quarterly\",\n                \"revenue\"\n            ],\n            \"metadata\": {\n                \"author\": \"Jane Smith\",\n                \"department\": \"Finance\"\n            },\n            \"createdAt\": \"2026-03-15T14:17:29.314078641Z\",\n            \"updatedAt\": \"2026-03-15T14:17:29.314081841Z\"\n        },\n        {\n            \"id\": \"doc_d0043868a4b04d56\",\n            \"tenantId\": \"tenant-acme\",\n            \"title\": \"Annual Budget Forecast 2026\",\n            \"content\": \"The projected budget for 2026 allocates $800M to R&D, $400M to sales and marketing, and $200M to infrastructure. Cloud migration costs are expected to decrease by 25%.\",\n            \"docType\": \"report\",\n            \"tags\": [\n                \"finance\",\n                \"budget\",\n                \"forecast\"\n            ],\n            \"metadata\": {\n                \"author\": \"CFO Office\",\n                \"department\": \"Finance\"\n            },\n            \"createdAt\": \"2026-03-15T14:17:29.340336499Z\",\n            \"updatedAt\": \"2026-03-15T14:17:29.340339399Z\"\n        },\n        {\n            \"id\": \"doc_ae06fb2fffce46bd\",\n            \"tenantId\": \"tenant-acme\",\n            \"title\": \"Microservices Architecture Migration Plan\",\n            \"content\": \"This document outlines the plan to migrate our monolithic application to a microservices architecture. Phase 1 involves decomposing the authentication and user management modules. We will use Kubernetes for orchestration and Resilience4j for circuit breakers.\",\n            \"docType\": \"technical\",\n            \"tags\": [\n                \"architecture\",\n                \"microservices\",\n                \"migration\",\n                \"kubernetes\"\n            ],\n            \"metadata\": {\n                \"author\": \"Bob Johnson\",\n                \"department\": \"Engineering\"\n            },\n            \"createdAt\": \"2026-03-15T14:17:29.360361840Z\",\n            \"updatedAt\": \"2026-03-15T14:17:29.360370941Z\"\n        },\n        {\n            \"id\": \"doc_1599ff4272144b8e\",\n            \"tenantId\": \"tenant-acme\",\n            \"title\": \"API Gateway Migration to Kong\",\n            \"content\": \"Details the migration from our custom API gateway to Kong Enterprise. Covers rate limiting, JWT validation, and request routing. Expected to reduce infrastructure costs by 30%.\",\n            \"docType\": \"technical\",\n            \"tags\": [\n                \"architecture\",\n                \"migration\",\n                \"kong\"\n            ],\n            \"metadata\": {\n                \"author\": \"Bob Johnson\",\n                \"department\": \"Engineering\"\n            },\n            \"createdAt\": \"2026-03-15T14:17:29.381222837Z\",\n            \"updatedAt\": \"2026-03-15T14:17:29.381225437Z\"\n        },\n        {\n            \"id\": \"doc_b5c6091d6da54162\",\n            \"tenantId\": \"tenant-acme\",\n            \"title\": \"Database Sharding Strategy\",\n            \"content\": \"Proposes horizontal sharding of the user database across 8 shards using consistent hashing. Expected to handle 10x current traffic with sub-100ms query latency.\",\n            \"docType\": \"technical\",\n            \"tags\": [\n                \"architecture\",\n                \"database\",\n                \"scaling\"\n            ],\n            \"metadata\": {\n                \"author\": \"DBA Team\",\n                \"department\": \"Engineering\"\n            },\n            \"createdAt\": \"2026-03-15T14:17:29.403492929Z\",\n            \"updatedAt\": \"2026-03-15T14:17:29.403495729Z\"\n        },\n        {\n            \"id\": \"doc_5de1d953303949eb\",\n            \"tenantId\": \"tenant-acme\",\n            \"title\": \"Remote Work Policy 2026\",\n            \"content\": \"Employees may work remotely up to 3 days per week with manager approval. Core collaboration hours are 10 AM to 3 PM local timezone. Quarterly in-person gatherings are mandatory.\",\n            \"docType\": \"policy\",\n            \"tags\": [\n                \"hr\",\n                \"remote-work\",\n                \"policy\"\n            ],\n            \"metadata\": {\n                \"author\": \"HR Team\",\n                \"department\": \"Human Resources\"\n            },\n            \"createdAt\": \"2026-03-15T14:17:29.422248785Z\",\n            \"updatedAt\": \"2026-03-15T14:17:29.422252585Z\"\n        },\n        {\n            \"id\": \"doc_d0a3290c42c5416c\",\n            \"tenantId\": \"tenant-acme\",\n            \"title\": \"Annual Performance Review Guidelines\",\n            \"content\": \"All employees must complete annual performance reviews by December 15. Managers provide written feedback on achievements, growth areas, and goals for the next year.\",\n            \"docType\": \"policy\",\n            \"tags\": [\n                \"hr\",\n                \"policy\",\n                \"review\"\n            ],\n            \"metadata\": {\n                \"author\": \"HR Team\",\n                \"department\": \"Human Resources\"\n            },\n            \"createdAt\": \"2026-03-15T14:17:29.443758125Z\",\n            \"updatedAt\": \"2026-03-15T14:17:29.443764425Z\"\n        }\n    ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "2d. Create Doc — Sales Strategy (tenant-globex) [Different Tenant]",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "pm.test('Different tenant', () => pm.expect(pm.response.json().data.tenantId).to.eql('tenant-globex'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Tenant-Id",
+            "value": "{{tenant2}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Globex Corporation Sales Strategy 2026\",\n  \"content\": \"Globex plans to expand into Asian markets in 2026 with a primary focus on Japan and South Korea. Revenue targets are set at $500M for the fiscal year. The sales team will double in size with new hires in Tokyo and Seoul offices.\",\n  \"docType\": \"strategy\",\n  \"tags\": [\"sales\", \"expansion\", \"asia\"],\n  \"metadata\": {\n    \"author\": \"Sales VP\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/documents",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "documents"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "2d. Create Doc — Sales Strategy (tenant-globex) [Different Tenant]",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{tenant2}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Globex Corporation Sales Strategy 2026\",\n  \"content\": \"Globex plans to expand into Asian markets in 2026 with a primary focus on Japan and South Korea. Revenue targets are set at $500M for the fiscal year. The sales team will double in size with new hires in Tokyo and Seoul offices.\",\n  \"docType\": \"strategy\",\n  \"tags\": [\"sales\", \"expansion\", \"asia\"],\n  \"metadata\": {\n    \"author\": \"Sales VP\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documents"
+              ]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "d17dc187"
+            },
+            {
+              "key": "X-RateLimit-Remaining",
+              "value": "199"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 15 Mar 2026 14:17:37 GMT"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"success\",\n    \"message\": \"Document indexed successfully\",\n    \"timestamp\": \"2026-03-15T14:17:37.371555154Z\",\n    \"data\": {\n        \"id\": \"doc_64ad4a3107bb42cd\",\n        \"tenantId\": \"tenant-globex\",\n        \"title\": \"Globex Corporation Sales Strategy 2026\",\n        \"content\": \"Globex plans to expand into Asian markets in 2026 with a primary focus on Japan and South Korea. Revenue targets are set at $500M for the fiscal year. The sales team will double in size with new hires in Tokyo and Seoul offices.\",\n        \"docType\": \"strategy\",\n        \"tags\": [\n            \"sales\",\n            \"expansion\",\n            \"asia\"\n        ],\n        \"metadata\": {\n            \"author\": \"Sales VP\"\n        },\n        \"createdAt\": \"2026-03-15T14:17:37.289986810Z\",\n        \"updatedAt\": \"2026-03-15T14:17:37.289989111Z\"\n    }\n}"
+        }
+      ]
+    },
+    {
+      "name": "⏱️ Wait 2s for OpenSearch Refresh",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// OpenSearch refresh interval is 1s. Wait 2s to be safe.",
+              "setTimeout(() => {}, 2000);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3a. Search — Relevance Ranking + Highlights",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('Success response', () => pm.expect(body.status).to.eql('success'));",
+              "pm.test('Has results', () => pm.expect(body.data.totalHits).to.be.greaterThan(0));",
+              "pm.test('Has highlights', () => pm.expect(body.data.results[0].highlights).to.not.be.empty);",
+              "pm.test('Has facets', () => pm.expect(body.data.facets).to.have.property('docType'));",
+              "pm.test('Revenue report ranked first', () => pm.expect(body.data.results[0].title).to.contain('Revenue'));"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Tenant-Id",
+            "value": "{{tenant1}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/search?q=2026&tenant={{tenant1}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "search"
+          ],
+          "query": [
+            {
+              "key": "q",
+              "value": "2026"
+            },
+            {
+              "key": "tenant",
+              "value": "{{tenant1}}"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "3a. Search — Relevance Ranking + Highlights",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{tenant1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/search?q=2026&tenant={{tenant1}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "2026"
+                },
+                {
+                  "key": "tenant",
+                  "value": "{{tenant1}}"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "0f196673"
+            },
+            {
+              "key": "X-RateLimit-Remaining",
+              "value": "199"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 15 Mar 2026 14:18:01 GMT"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"success\",\n    \"message\": \"Search completed\",\n    \"timestamp\": \"2026-03-15T14:18:01.982350658Z\",\n    \"data\": {\n        \"query\": \"2026\",\n        \"totalHits\": 4,\n        \"tookMs\": 521,\n        \"results\": [\n            {\n                \"id\": \"doc_d0043868a4b04d56\",\n                \"title\": \"Annual Budget Forecast 2026\",\n                \"score\": 3.8428016,\n                \"highlights\": {\n                    \"title\": [\n                        \"Annual Budget Forecast <em>2026</em>\"\n                    ],\n                    \"content\": [\n                        \"The projected budget for <em>2026</em> allocates $800M to R&D, $400M to sales and marketing, and $200M to infrastructure. Cloud migration costs are expected to decrease by 25%.\"\n                    ]\n                },\n                \"tags\": [\n                    \"finance\",\n                    \"budget\",\n                    \"forecast\"\n                ],\n                \"docType\": \"report\",\n                \"createdAt\": \"2026-03-15T14:17:29.340Z\"\n            },\n            {\n                \"id\": \"doc_5de1d953303949eb\",\n                \"title\": \"Remote Work Policy 2026\",\n                \"score\": 3.8428016,\n                \"highlights\": {\n                    \"title\": [\n                        \"Remote Work Policy <em>2026</em>\"\n                    ]\n                },\n                \"tags\": [\n                    \"hr\",\n                    \"remote-work\",\n                    \"policy\"\n                ],\n                \"docType\": \"policy\",\n                \"createdAt\": \"2026-03-15T14:17:29.422Z\"\n            },\n            {\n                \"id\": \"doc_fba8c4b1548a46f2\",\n                \"title\": \"Q4 2025 Revenue Report\",\n                \"score\": 2.882101,\n                \"highlights\": {\n                    \"title\": [\n                        \"Q4 <em>2025</em> Revenue Report\"\n                    ],\n                    \"content\": [\n                        \"The company achieved record revenue of $2.4 billion in Q4 <em>2025</em>, representing a 23% year-over-year growth.\"\n                    ]\n                },\n                \"tags\": [\n                    \"finance\",\n                    \"quarterly\",\n                    \"revenue\",\n                    \"cloud\"\n                ],\n                \"docType\": \"report\",\n                \"createdAt\": \"2026-03-15T14:17:29.077Z\"\n            },\n            {\n                \"id\": \"doc_aea9e72a7cdf4ab0\",\n                \"title\": \"Q3 2025 Revenue Report\",\n                \"score\": 2.882101,\n                \"highlights\": {\n                    \"title\": [\n                        \"Q3 <em>2025</em> Revenue Report\"\n                    ]\n                },\n                \"tags\": [\n                    \"finance\",\n                    \"quarterly\",\n                    \"revenue\"\n                ],\n                \"docType\": \"report\",\n                \"createdAt\": \"2026-03-15T14:17:29.314Z\"\n            }\n        ],\n        \"facets\": {\n            \"docType\": {\n                \"report\": 3,\n                \"policy\": 1\n            },\n            \"tags\": {\n                \"finance\": 3,\n                \"quarterly\": 2,\n                \"revenue\": 2,\n                \"budget\": 1,\n                \"cloud\": 1,\n                \"forecast\": 1,\n                \"hr\": 1,\n                \"policy\": 1,\n                \"remote-work\": 1\n            }\n        }\n    }\n}"
+        }
+      ]
+    },
+    {
+      "name": "3b. Search — Faceted Aggregations",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('Facets have docType counts', () => {",
+              "  pm.expect(body.data.facets.docType).to.be.an('object');",
+              "});",
+              "pm.test('Facets have tag counts', () => {",
+              "  pm.expect(body.data.facets.tags).to.be.an('object');",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Tenant-Id",
+            "value": "{{tenant1}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/search?q=the&tenant={{tenant1}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "search"
+          ],
+          "query": [
+            {
+              "key": "q",
+              "value": "the"
+            },
+            {
+              "key": "tenant",
+              "value": "{{tenant1}}"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "3b. Search — Faceted Aggregations",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{tenant1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/search?q=the&tenant={{tenant1}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "the"
+                },
+                {
+                  "key": "tenant",
+                  "value": "{{tenant1}}"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "8377cb28"
+            },
+            {
+              "key": "X-RateLimit-Remaining",
+              "value": "199"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 15 Mar 2026 14:19:15 GMT"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"success\",\n    \"message\": \"Search completed\",\n    \"timestamp\": \"2026-03-15T14:19:15.771541905Z\",\n    \"data\": {\n        \"query\": \"the\",\n        \"totalHits\": 7,\n        \"tookMs\": 44,\n        \"results\": [\n            {\n                \"id\": \"doc_fba8c4b1548a46f2\",\n                \"title\": \"Q4 2025 Revenue Report\",\n                \"score\": 0.23610125,\n                \"highlights\": {\n                    \"content\": [\n                        \"<em>The</em> company achieved record revenue of $2.4 billion in Q4 2025, representing a 23% year-over-year growth.\",\n                        \"Cloud services division drove most of <em>the</em> growth with a 45% increase in annual recurring revenue.\"\n                    ]\n                },\n                \"tags\": [\n                    \"finance\",\n                    \"quarterly\",\n                    \"revenue\",\n                    \"cloud\"\n                ],\n                \"docType\": \"report\",\n                \"createdAt\": \"2026-03-15T14:17:29.077Z\"\n            },\n            {\n                \"id\": \"doc_ae06fb2fffce46bd\",\n                \"title\": \"Microservices Architecture Migration Plan\",\n                \"score\": 0.23387885,\n                \"highlights\": {\n                    \"content\": [\n                        \"This document outlines <em>the</em> plan to migrate our monolithic application to a microservices architecture. Phase 1 involves decomposing <em>the</em> authentication and user management modules.\"\n                    ]\n                },\n                \"tags\": [\n                    \"architecture\",\n                    \"microservices\",\n                    \"migration\",\n                    \"kubernetes\"\n                ],\n                \"docType\": \"technical\",\n                \"createdAt\": \"2026-03-15T14:17:29.360Z\"\n            },\n            {\n                \"id\": \"doc_aea9e72a7cdf4ab0\",\n                \"title\": \"Q3 2025 Revenue Report\",\n                \"score\": 0.19952479,\n                \"highlights\": {\n                    \"content\": [\n                        \"<em>The</em> company expanded its customer base by 18%.\"\n                    ]\n                },\n                \"tags\": [\n                    \"finance\",\n                    \"quarterly\",\n                    \"revenue\"\n                ],\n                \"docType\": \"report\",\n                \"createdAt\": \"2026-03-15T14:17:29.314Z\"\n            },\n            {\n                \"id\": \"doc_b5c6091d6da54162\",\n                \"title\": \"Database Sharding Strategy\",\n                \"score\": 0.19331524,\n                \"highlights\": {\n                    \"content\": [\n                        \"Proposes horizontal sharding of <em>the</em> user database across 8 shards using consistent hashing. Expected to handle 10x current traffic with sub-100ms query latency.\"\n                    ]\n                },\n                \"tags\": [\n                    \"architecture\",\n                    \"database\",\n                    \"scaling\"\n                ],\n                \"docType\": \"technical\",\n                \"createdAt\": \"2026-03-15T14:17:29.403Z\"\n            },\n            {\n                \"id\": \"doc_d0a3290c42c5416c\",\n                \"title\": \"Annual Performance Review Guidelines\",\n                \"score\": 0.19331524,\n                \"highlights\": {\n                    \"content\": [\n                        \"Managers provide written feedback on achievements, growth areas, and goals for <em>the</em> next year.\"\n                    ]\n                },\n                \"tags\": [\n                    \"hr\",\n                    \"policy\",\n                    \"review\"\n                ],\n                \"docType\": \"policy\",\n                \"createdAt\": \"2026-03-15T14:17:29.443Z\"\n            },\n            {\n                \"id\": \"doc_1599ff4272144b8e\",\n                \"title\": \"API Gateway Migration to Kong\",\n                \"score\": 0.18748052,\n                \"highlights\": {\n                    \"content\": [\n                        \"Details <em>the</em> migration from our custom API gateway to Kong Enterprise. Covers rate limiting, JWT validation, and request routing. Expected to reduce infrastructure costs by 30%.\"\n                    ]\n                },\n                \"tags\": [\n                    \"architecture\",\n                    \"migration\",\n                    \"kong\"\n                ],\n                \"docType\": \"technical\",\n                \"createdAt\": \"2026-03-15T14:17:29.381Z\"\n            },\n            {\n                \"id\": \"doc_d0043868a4b04d56\",\n                \"title\": \"Annual Budget Forecast 2026\",\n                \"score\": 0.1819877,\n                \"highlights\": {\n                    \"content\": [\n                        \"<em>The</em> projected budget for 2026 allocates $800M to R&D, $400M to sales and marketing, and $200M to infrastructure. Cloud migration costs are expected to decrease by 25%.\"\n                    ]\n                },\n                \"tags\": [\n                    \"finance\",\n                    \"budget\",\n                    \"forecast\"\n                ],\n                \"docType\": \"report\",\n                \"createdAt\": \"2026-03-15T14:17:29.340Z\"\n            }\n        ],\n        \"facets\": {\n            \"docType\": {\n                \"report\": 3,\n                \"technical\": 3,\n                \"policy\": 1\n            },\n            \"tags\": {\n                \"architecture\": 3,\n                \"finance\": 3,\n                \"migration\": 2,\n                \"quarterly\": 2,\n                \"revenue\": 2,\n                \"budget\": 1,\n                \"cloud\": 1,\n                \"database\": 1,\n                \"forecast\": 1,\n                \"hr\": 1,\n                \"kong\": 1,\n                \"kubernetes\": 1,\n                \"microservices\": 1,\n                \"policy\": 1,\n                \"review\": 1,\n                \"scaling\": 1\n            }\n        }\n    }\n}"
+        }
+      ]
+    },
+    {
+      "name": "3c. Search — Fuzzy Matching (typo: 'revnue')",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Fuzzy match found results despite typo', () => {",
+              "  pm.expect(pm.response.json().data.totalHits).to.be.greaterThan(0);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Tenant-Id",
+            "value": "{{tenant1}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/search?q=revnue&tenant={{tenant1}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "search"
+          ],
+          "query": [
+            {
+              "key": "q",
+              "value": "revnue"
+            },
+            {
+              "key": "tenant",
+              "value": "{{tenant1}}"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "3c. Search — Fuzzy Matching (typo: 'revnue')",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{tenant1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/search?q=revnue&tenant={{tenant1}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "revnue"
+                },
+                {
+                  "key": "tenant",
+                  "value": "{{tenant1}}"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "6944c706"
+            },
+            {
+              "key": "X-RateLimit-Remaining",
+              "value": "199"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 15 Mar 2026 14:19:27 GMT"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"success\",\n    \"message\": \"Search completed\",\n    \"timestamp\": \"2026-03-15T14:19:27.211118152Z\",\n    \"data\": {\n        \"query\": \"revnue\",\n        \"totalHits\": 2,\n        \"tookMs\": 36,\n        \"results\": [\n            {\n                \"id\": \"doc_fba8c4b1548a46f2\",\n                \"title\": \"Q4 2025 Revenue Report\",\n                \"score\": 3.2023346,\n                \"highlights\": {\n                    \"title\": [\n                        \"Q4 2025 <em>Revenue</em> Report\"\n                    ],\n                    \"content\": [\n                        \"The company achieved record <em>revenue</em> of $2.4 billion in Q4 2025, representing a 23% year-over-year growth.\",\n                        \"Cloud services division drove most of the growth with a 45% increase in annual recurring <em>revenue</em>.\"\n                    ]\n                },\n                \"tags\": [\n                    \"finance\",\n                    \"quarterly\",\n                    \"revenue\",\n                    \"cloud\"\n                ],\n                \"docType\": \"report\",\n                \"createdAt\": \"2026-03-15T14:17:29.077Z\"\n            },\n            {\n                \"id\": \"doc_aea9e72a7cdf4ab0\",\n                \"title\": \"Q3 2025 Revenue Report\",\n                \"score\": 3.2023346,\n                \"highlights\": {\n                    \"title\": [\n                        \"Q3 2025 <em>Revenue</em> Report\"\n                    ],\n                    \"content\": [\n                        \"Q3 <em>revenue</em> reached $2.1 billion with strong performance in cloud services and enterprise sales. The company expanded its customer base by 18%.\"\n                    ]\n                },\n                \"tags\": [\n                    \"finance\",\n                    \"quarterly\",\n                    \"revenue\"\n                ],\n                \"docType\": \"report\",\n                \"createdAt\": \"2026-03-15T14:17:29.314Z\"\n            }\n        ],\n        \"facets\": {\n            \"docType\": {\n                \"report\": 2\n            },\n            \"tags\": {\n                \"finance\": 2,\n                \"quarterly\": 2,\n                \"revenue\": 2,\n                \"cloud\": 1\n            }\n        }\n    }\n}"
+        }
+      ]
+    },
+    {
+      "name": "4a. Tenant Isolation — Globex cannot see Acme docs",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Zero results — tenant isolation working', () => {",
+              "  pm.expect(pm.response.json().data.totalHits).to.eql(0);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Tenant-Id",
+            "value": "{{tenant2}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/search?q=revenue&tenant={{tenant2}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "search"
+          ],
+          "query": [
+            {
+              "key": "q",
+              "value": "revenue"
+            },
+            {
+              "key": "tenant",
+              "value": "{{tenant2}}"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "4a. Tenant Isolation — Globex cannot see Acme docs",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{tenant2}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/search?q=revenue&tenant={{tenant2}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "revenue"
+                },
+                {
+                  "key": "tenant",
+                  "value": "{{tenant2}}"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "03a8d575"
+            },
+            {
+              "key": "X-RateLimit-Remaining",
+              "value": "199"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 15 Mar 2026 14:22:05 GMT"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"success\",\n    \"message\": \"Search completed\",\n    \"timestamp\": \"2026-03-15T14:22:05.266661078Z\",\n    \"data\": {\n        \"query\": \"revenue\",\n        \"totalHits\": 1,\n        \"tookMs\": 30,\n        \"results\": [\n            {\n                \"id\": \"doc_64ad4a3107bb42cd\",\n                \"title\": \"Globex Corporation Sales Strategy 2026\",\n                \"score\": 0.2904453,\n                \"highlights\": {\n                    \"content\": [\n                        \"<em>Revenue</em> targets are set at $500M for the fiscal year. The sales team will double in size with new hires in Tokyo and Seoul offices.\"\n                    ]\n                },\n                \"tags\": [\n                    \"sales\",\n                    \"expansion\",\n                    \"asia\"\n                ],\n                \"docType\": \"strategy\",\n                \"createdAt\": \"2026-03-15T14:17:37.289Z\"\n            }\n        ],\n        \"facets\": {\n            \"docType\": {\n                \"strategy\": 1\n            },\n            \"tags\": {\n                \"asia\": 1,\n                \"expansion\": 1,\n                \"sales\": 1\n            }\n        }\n    }\n}"
+        }
+      ]
+    },
+    {
+      "name": "4b. Tenant Mismatch — Header vs Query Param → 403",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 403 — defense in depth', () => pm.response.to.have.status(403));",
+              "pm.test('Failure response with error code', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql('failure');",
+              "  pm.expect(body.errors[0].code).to.eql('DS006');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Tenant-Id",
+            "value": "{{tenant1}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/search?q=revenue&tenant={{tenant2}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "search"
+          ],
+          "query": [
+            {
+              "key": "q",
+              "value": "revenue"
+            },
+            {
+              "key": "tenant",
+              "value": "{{tenant2}}"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "4b. Tenant Mismatch — Header vs Query Param → 403",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{tenant1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/search?q=revenue&tenant={{tenant2}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "revenue"
+                },
+                {
+                  "key": "tenant",
+                  "value": "{{tenant2}}"
+                }
+              ]
+            }
+          },
+          "status": "Forbidden",
+          "code": 403,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "21a2b976"
+            },
+            {
+              "key": "X-RateLimit-Remaining",
+              "value": "199"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 15 Mar 2026 14:22:25 GMT"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"failure\",\n    \"message\": \"X-Tenant-Id header must match tenant query parameter\",\n    \"timestamp\": \"2026-03-15T14:22:25.33198377Z\",\n    \"errors\": [\n        {\n            \"code\": \"DS006\",\n            \"description\": \"X-Tenant-Id header must match tenant query parameter\"\n        }\n    ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "5. Retrieve Document by ID (full content)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('Success response', () => pm.expect(body.status).to.eql('success'));",
+              "pm.test('Has full content', () => pm.expect(body.data.content).to.include('revenue'));",
+              "pm.test('Has metadata', () => pm.expect(body.data.metadata.author).to.eql('Jane Smith'));",
+              "pm.test('Correct tenant', () => pm.expect(body.data.tenantId).to.eql('tenant-acme'));"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Tenant-Id",
+            "value": "{{tenant2}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/documents/{{doc1Id}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "documents",
+            "{{doc1Id}}"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "5. Retrieve Document by ID (full content)",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{tenant2}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documents/{{doc1Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documents",
+                "{{doc1Id}}"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "e6993c53"
+            },
+            {
+              "key": "X-RateLimit-Remaining",
+              "value": "199"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 15 Mar 2026 14:25:21 GMT"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"success\",\n    \"message\": \"Document retrieved\",\n    \"timestamp\": \"2026-03-15T14:25:21.850067677Z\",\n    \"data\": {\n        \"id\": \"doc_64ad4a3107bb42cd\",\n        \"tenantId\": \"tenant-globex\",\n        \"title\": \"Globex Corporation Sales Strategy 2026\",\n        \"content\": \"Globex plans to expand into Asian markets in 2026 with a primary focus on Japan and South Korea. Revenue targets are set at $500M for the fiscal year. The sales team will double in size with new hires in Tokyo and Seoul offices.\",\n        \"docType\": \"strategy\",\n        \"tags\": [\n            \"sales\",\n            \"expansion\",\n            \"asia\"\n        ],\n        \"metadata\": {\n            \"author\": \"Sales VP\"\n        },\n        \"createdAt\": \"2026-03-15T14:17:37.289Z\",\n        \"updatedAt\": \"2026-03-15T14:17:37.289Z\"\n    }\n}"
+        }
+      ]
+    },
+    {
+      "name": "6. Cross-Tenant GET — Acme doc via Globex → 404",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 404 — cannot access other tenant docs', () => pm.response.to.have.status(404));",
+              "pm.test('Failure with error code', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql('failure');",
+              "  pm.expect(body.errors[0].code).to.eql('DS003');",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Tenant-Id",
+            "value": "{{tenant1}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/documents/{{doc1Id}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "documents",
+            "{{doc1Id}}"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "6. Cross-Tenant GET — Acme doc via Globex → 404",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{tenant1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documents/{{doc1Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documents",
+                "{{doc1Id}}"
+              ]
+            }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "c5c6afbc"
+            },
+            {
+              "key": "X-RateLimit-Remaining",
+              "value": "199"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 15 Mar 2026 14:25:52 GMT"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"failure\",\n    \"message\": \"Document not found: doc_64ad4a3107bb42cd\",\n    \"timestamp\": \"2026-03-15T14:25:52.872945051Z\",\n    \"errors\": [\n        {\n            \"code\": \"DS003\",\n            \"description\": \"Document does not exist in this tenant's index\"\n        }\n    ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "7a. Delete Document",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Success response', () => pm.expect(pm.response.json().status).to.eql('success'));",
+              "pm.test('Returns deleted doc ID', () => pm.expect(pm.response.json().data.id).to.not.be.empty);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "X-Tenant-Id",
+            "value": "{{tenant1}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/documents/{{doc2Id}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "documents",
+            "{{doc2Id}}"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "7a. Delete Document",
+          "originalRequest": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{tenant1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documents/{{doc2Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documents",
+                "{{doc2Id}}"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "5bba4e2f"
+            },
+            {
+              "key": "X-RateLimit-Remaining",
+              "value": "199"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 15 Mar 2026 14:26:41 GMT"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"success\",\n    \"message\": \"Document deleted\",\n    \"timestamp\": \"2026-03-15T14:26:41.34751009Z\",\n    \"data\": {\n        \"id\": \"doc_fba8c4b1548a46f2\",\n        \"tenantId\": \"tenant-acme\",\n        \"title\": null,\n        \"content\": null,\n        \"docType\": null,\n        \"tags\": null,\n        \"metadata\": null,\n        \"createdAt\": null,\n        \"updatedAt\": null\n    }\n}"
+        }
+      ]
+    },
+    {
+      "name": "7b. Verify Deleted — GET returns 404",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 404 — document deleted', () => pm.response.to.have.status(404));",
+              "pm.test('Error code DS003', () => pm.expect(pm.response.json().errors[0].code).to.eql('DS003'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Tenant-Id",
+            "value": "{{tenant1}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/documents/{{doc2Id}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "documents",
+            "{{doc2Id}}"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "7b. Verify Deleted — GET returns 404",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{tenant1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documents/{{doc2Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documents",
+                "{{doc2Id}}"
+              ]
+            }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "d7fdcfb5"
+            },
+            {
+              "key": "X-RateLimit-Remaining",
+              "value": "199"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 15 Mar 2026 14:26:49 GMT"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"failure\",\n    \"message\": \"Document not found: doc_fba8c4b1548a46f2\",\n    \"timestamp\": \"2026-03-15T14:26:49.242764567Z\",\n    \"errors\": [\n        {\n            \"code\": \"DS003\",\n            \"description\": \"Document does not exist in this tenant's index\"\n        }\n    ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "8a. Error — Missing Tenant Header → 400",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 400', () => pm.response.to.have.status(400));",
+              "pm.test('Failure with tenant error code', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql('failure');",
+              "  pm.expect(body.errors[0].code).to.eql('DS002');",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"test\", \"content\": \"test\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/documents",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "documents"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "8a. Error — Missing Tenant Header → 400",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"test\", \"content\": \"test\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documents"
+              ]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "ca4ba829"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json;charset=ISO-8859-1"
+            },
+            {
+              "key": "Content-Length",
+              "value": "195"
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 15 Mar 2026 14:27:10 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "close"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"failure\",\n    \"message\": \"Missing required header: X-Tenant-Id\",\n    \"timestamp\": \"2026-03-15T14:27:10.363688986Z\",\n    \"errors\": [\n        {\n            \"code\": \"DS002\",\n            \"description\": \"Invalid or missing tenant identifier\"\n        }\n    ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "8b. Error — Empty Title → 400 Validation",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 400', () => pm.response.to.have.status(400));",
+              "pm.test('Validation error', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql('failure');",
+              "  pm.expect(body.errors[0].code).to.eql('DS004');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Tenant-Id",
+            "value": "{{tenant1}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"\", \"content\": \"\"}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/documents",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "documents"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "8b. Error — Empty Title → 400 Validation",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{tenant1}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"\", \"content\": \"\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documents"
+              ]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "54de616d"
+            },
+            {
+              "key": "X-RateLimit-Remaining",
+              "value": "199"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 15 Mar 2026 14:27:23 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "close"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"failure\",\n    \"message\": \"Validation failed\",\n    \"timestamp\": \"2026-03-15T14:27:23.598727177Z\",\n    \"errors\": [\n        {\n            \"code\": \"DS004\",\n            \"description\": \"content: Content is required\"\n        },\n        {\n            \"code\": \"DS004\",\n            \"description\": \"title: Title is required\"\n        }\n    ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "8c. Error — Document Not Found → 404",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 404', () => pm.response.to.have.status(404));",
+              "pm.test('Error code DS003', () => pm.expect(pm.response.json().errors[0].code).to.eql('DS003'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Tenant-Id",
+            "value": "{{tenant1}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/documents/doc_nonexistent123",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "documents",
+            "doc_nonexistent123"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "8c. Error — Document Not Found → 404",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{tenant1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documents/doc_nonexistent123",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documents",
+                "doc_nonexistent123"
+              ]
+            }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "07d6b757"
+            },
+            {
+              "key": "X-RateLimit-Remaining",
+              "value": "199"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 15 Mar 2026 14:27:41 GMT"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=60"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"status\": \"failure\",\n    \"message\": \"Document not found: doc_nonexistent123\",\n    \"timestamp\": \"2026-03-15T14:27:41.923267261Z\",\n    \"errors\": [\n        {\n            \"code\": \"DS003\",\n            \"description\": \"Document does not exist in this tenant's index\"\n        }\n    ]\n}"
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1"
+    },
+    {
+      "key": "tenant1",
+      "value": "tenant-acme"
+    },
+    {
+      "key": "tenant2",
+      "value": "tenant-globex"
+    },
+    {
+      "key": "doc1Id",
+      "value": ""
+    },
+    {
+      "key": "doc2Id",
+      "value": ""
+    },
+    {
+      "key": "doc3Id",
+      "value": ""
+    }
+  ]
+}
