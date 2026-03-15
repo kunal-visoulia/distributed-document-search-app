@@ -42,10 +42,14 @@ public class SearchService {
     private final CacheService cache;
 
     public SearchResponse search(String tenantId, String query) {
-        var cached = cache.getSearchResult(tenantId, query, SearchResponse.class);
-        if (cached.isPresent()) return cached.get();
-
         long start = System.currentTimeMillis();
+
+        var cached = cache.getSearchResult(tenantId, query, SearchResponse.class);
+        if (cached.isPresent()) {
+            SearchResponse cachedResponse = cached.get();
+            cachedResponse.setTookMs(System.currentTimeMillis() - start);
+            return cachedResponse;
+        }
         String indexName = tenantIndex.resolveIndexName(tenantId);
 
         try {
