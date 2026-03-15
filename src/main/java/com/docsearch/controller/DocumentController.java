@@ -70,12 +70,12 @@ public class DocumentController {
 
     @Operation(summary = "Delete a document")
     @DeleteMapping("/documents/{id}")
-    public ResponseEntity<ApiResponse<DocumentResponse>> delete(
+    public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable String id,
             @Parameter(hidden = true) HttpServletRequest httpReq) {
         String tenantId = getTenantId(httpReq);
-        DocumentResponse response = documentService.delete(tenantId, id);
-        return ResponseEntity.ok(ApiResponse.success("Document deleted", response));
+        documentService.delete(tenantId, id);
+        return ResponseEntity.ok(ApiResponse.success("Document deleted successfully", null));
     }
 
     private String getTenantId(HttpServletRequest req) {
