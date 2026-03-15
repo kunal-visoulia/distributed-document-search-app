@@ -1,41 +1,33 @@
 package com.docsearch.service;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.query_dsl.*;
-import co.elastic.clients.elasticsearch.core.search.Hit;
-import com.docsearch.document.DocumentEntity;
 import com.docsearch.dto.SearchResponse;
 import com.docsearch.dto.SearchResponse.SearchHit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.opensearch.action.search.SearchRequest;
+import org.opensearch.client.RequestOptions;
+import org.opensearch.client.RestHighLevelClient;
+import org.opensearch.index.query.BoolQueryBuilder;
+import org.opensearch.index.query.QueryBuilders;
+import org.opensearch.search.aggregations.AggregationBuilders;
+import org.opensearch.search.aggregations.bucket.terms.Terms;
+import org.opensearch.search.builder.SearchSourceBuilder;
+import org.opensearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 
-/**
- * Full-text search using OpenSearch (via ES-compatible client).
- *
- * Features:
- * - BM25 relevance scoring with title boosted 3x
- * - Fuzzy matching (typo tolerance)
- * - Highlighting on title and content
- * - Faceted aggregations on docType and tags
- *
- * Uses ElasticsearchClient (not Repository) because Repository
- * doesn't support highlighting, aggregations, or custom scoring.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class SearchService {
 
-    private final ElasticsearchClient esClient;
+    private final RestHighLevelClient client;
     private final TenantIndexService tenantIndex;
     private final CacheService cache;
 
     public SearchResponse search(String tenantId, String query) {
 
-        // Check cache
         var cached = cache.getSearchResult(tenantId, query, SearchResponse.class);
         if (cached.isPresent()) return cached.get();
 
@@ -43,54 +35,70 @@ public class SearchService {
         String indexName = tenantIndex.resolveIndexName(tenantId);
 
         try {
-            // Ensure index exists
             tenantIndex.resolveIndex(tenantId);
 
-            var boolQuery = BoolQuery.of(bq -> {
-                if (query != null && !query.isBlank()) {
-                    bq.must(m -> m.multiMatch(mm -> mm
-                            .query(query)
-                            .fields("title^3", "content")
-                            .type(TextQueryType.BestFields)
-                            .fuzziness("AUTO")
-                            .prefixLength(2)
-                    ));
-                } else {
-                    bq.must(m -> m.matchAll(ma -> ma));
-                }
-                return bq;
-            });
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
 
-            var response = esClient.search(s -> s
-                    .index(indexName)
-                    .query(q -> q.bool(boolQuery))
+            if (query != null && !query.isBlank()) {
+                boolQuery.must(QueryBuilders.multiMatchQuery(query, "title", "content")
+                        .field("title", 3.0f)
+                        .fuzziness("AUTO")
+                        .prefixLength(2));
+            } else {
+                boolQuery.must(QueryBuilders.matchAllQuery());
+            }
+
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
+                    .query(boolQuery)
                     .size(20)
-                    .highlight(h -> h
-                            .fields("title", hf -> hf
-                                    .preTags("<em>").postTags("</em>")
-                                    .numberOfFragments(1))
-                            .fields("content", hf -> hf
-                                    .preTags("<em>").postTags("</em>")
-                                    .fragmentSize(200)
-                                    .numberOfFragments(3))
-                    )
-                    .aggregations("doc_types", a -> a
-                            .terms(t -> t.field("docType").size(20)))
-                    .aggregations("tags", a -> a
-                            .terms(t -> t.field("tags").size(50)))
-                    .source(src -> src.filter(f -> f.excludes("content"))),
-                    DocumentEntity.class
-            );
+                    .highlighter(new HighlightBuilder()
+                            .field("title", 150, 1)
+                            .field("content", 200, 3)
+                            .preTags("<em>")
+                            .postTags("</em>"))
+                    .aggregation(AggregationBuilders.terms("doc_types").field("docType").size(20))
+                    .aggregation(AggregationBuilders.terms("tags").field("tags").size(50))
+                    .fetchSource(null, new String[]{"content"});
 
-            List<SearchHit> hits = response.hits().hits().stream()
-                    .map(this::mapHit).toList();
+            SearchRequest searchRequest = new SearchRequest(indexName).source(sourceBuilder);
+
+            org.opensearch.action.search.SearchResponse osResponse =
+                    client.search(searchRequest, RequestOptions.DEFAULT);
+
+            List<SearchHit> hits = new ArrayList<>();
+            for (org.opensearch.search.SearchHit hit : osResponse.getHits().getHits()) {
+                Map<String, Object> source = hit.getSourceAsMap();
+                Map<String, List<String>> highlights = new HashMap<>();
+                if (hit.getHighlightFields() != null) {
+                    hit.getHighlightFields().forEach((field, highlight) -> {
+                        List<String> fragments = new ArrayList<>();
+                        for (var fragment : highlight.getFragments()) {
+                            fragments.add(fragment.string());
+                        }
+                        highlights.put(field, fragments);
+                    });
+                }
+
+                @SuppressWarnings("unchecked")
+                List<String> tags = source.get("tags") != null
+                        ? (List<String>) source.get("tags") : null;
+
+                hits.add(SearchHit.builder()
+                        .id(hit.getId())
+                        .title(source.get("title") != null ? source.get("title").toString() : null)
+                        .score(hit.getScore())
+                        .highlights(highlights)
+                        .tags(tags)
+                        .docType(source.get("docType") != null ? source.get("docType").toString() : null)
+                        .build());
+            }
 
             Map<String, Map<String, Long>> facets = new LinkedHashMap<>();
-            facets.put("docType", extractBuckets(response, "doc_types"));
-            facets.put("tags", extractBuckets(response, "tags"));
+            facets.put("docType", extractBuckets(osResponse, "doc_types"));
+            facets.put("tags", extractBuckets(osResponse, "tags"));
 
-            long totalHits = response.hits().total() != null
-                    ? response.hits().total().value() : 0;
+            long totalHits = osResponse.getHits().getTotalHits() != null
+                    ? osResponse.getHits().getTotalHits().value : 0;
 
             SearchResponse result = SearchResponse.builder()
                     .query(query)
@@ -109,30 +117,14 @@ public class SearchService {
         }
     }
 
-    private SearchHit mapHit(Hit<DocumentEntity> hit) {
-        DocumentEntity src = hit.source();
-        Map<String, List<String>> highlights = new HashMap<>();
-        if (hit.highlight() != null) hit.highlight().forEach(highlights::put);
-
-        return SearchHit.builder()
-                .id(src != null ? src.getId() : hit.id())
-                .title(src != null ? src.getTitle() : null)
-                .score(hit.score() != null ? hit.score().floatValue() : 0f)
-                .highlights(highlights)
-                .tags(src != null ? src.getTags() : null)
-                .docType(src != null ? src.getDocType() : null)
-                .createdAt(src != null ? src.getCreatedAt() : null)
-                .build();
-    }
-
     private Map<String, Long> extractBuckets(
-            co.elastic.clients.elasticsearch.core.SearchResponse<?> response, String aggName) {
+            org.opensearch.action.search.SearchResponse response, String aggName) {
         Map<String, Long> result = new LinkedHashMap<>();
         try {
-            var agg = response.aggregations().get(aggName);
-            if (agg != null && agg.isSterms()) {
-                agg.sterms().buckets().array().forEach(b ->
-                        result.put(b.key().stringValue(), b.docCount()));
+            Terms agg = response.getAggregations().get(aggName);
+            if (agg != null) {
+                agg.getBuckets().forEach(bucket ->
+                        result.put(bucket.getKeyAsString(), bucket.getDocCount()));
             }
         } catch (Exception e) {
             log.warn("Aggregation {} extraction failed: {}", aggName, e.getMessage());

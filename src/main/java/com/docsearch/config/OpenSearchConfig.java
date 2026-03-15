@@ -1,21 +1,14 @@
 package com.docsearch.config;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
-import org.apache.http.HttpResponseInterceptor;
-import org.apache.http.message.BasicHeader;
-import org.elasticsearch.client.RestClient;
+import org.opensearch.client.RestHighLevelClient;
+import org.opensearch.data.client.orhlc.AbstractOpenSearchConfiguration;
+import org.opensearch.data.client.orhlc.ClientConfiguration;
+import org.opensearch.data.client.orhlc.RestClients;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-
-import java.util.List;
 
 @Configuration
-public class OpenSearchConfig {
+public class OpenSearchConfig extends AbstractOpenSearchConfiguration {
 
     @Value("${opensearch.host:localhost}")
     private String host;
@@ -23,27 +16,13 @@ public class OpenSearchConfig {
     @Value("${opensearch.port:9200}")
     private int port;
 
-    @Bean
-    public RestClient restClient() {
-        return RestClient.builder(
-                        new org.apache.http.HttpHost(host, port, "http"))
-                .setHttpClientConfigCallback(httpClientBuilder ->
-                        httpClientBuilder.addInterceptorLast(
-                                (HttpResponseInterceptor) (response, context) ->
-                                        response.addHeader("X-Elastic-Product", "Elasticsearch")
-                        ))
+    @Override
+    public RestHighLevelClient opensearchClient() {
+        ClientConfiguration config = ClientConfiguration.builder()
+                .connectedTo(host + ":" + port)
+                .withConnectTimeout(5000)
+                .withSocketTimeout(10000)
                 .build();
-    }
-
-    @Bean
-    public ElasticsearchClient elasticsearchClient(RestClient restClient) {
-        RestClientTransport transport = new RestClientTransport(
-                restClient, new JacksonJsonpMapper());
-        return new ElasticsearchClient(transport);
-    }
-
-    @Bean
-    public ElasticsearchOperations elasticsearchOperations(ElasticsearchClient client) {
-        return new ElasticsearchTemplate(client);
+        return RestClients.create(config).rest();
     }
 }
