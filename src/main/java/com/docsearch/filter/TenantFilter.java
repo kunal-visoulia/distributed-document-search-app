@@ -1,26 +1,28 @@
 package com.docsearch.filter;
 
+import com.docsearch.dto.ApiResponse;
+import com.docsearch.dto.ApiResponse.ApiError;
+import com.docsearch.exception.ErrorCode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.List;
 
-/**
- * Extracts and validates X-Tenant-Id header.
- * <p>
- * Production: Kong validates JWT, extracts tenant_id from claims,
- * sets X-Tenant-Id header (client cannot forge it).
- * Prototype: Client provides header directly.
- */
 @Component
 @Order(1)
+@RequiredArgsConstructor
 public class TenantFilter implements Filter {
 
     public static final String TENANT_HEADER = "X-Tenant-Id";
     public static final String TENANT_ATTR = "tenantId";
+
+    private final ObjectMapper objectMapper;
 
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
@@ -54,6 +56,11 @@ public class TenantFilter implements Filter {
     private void sendError(HttpServletResponse res, int status, String msg) throws IOException {
         res.setStatus(status);
         res.setContentType("application/json");
-        res.getWriter().write("{\"error\": \"" + msg + "\"}");
+        ApiResponse<?> response = ApiResponse.failure(msg, List.of(
+                ApiError.builder()
+                        .code(ErrorCode.INVALID_TENANT.getCode())
+                        .description(ErrorCode.INVALID_TENANT.getDescription())
+                        .build()));
+        res.getWriter().write(objectMapper.writeValueAsString(response));
     }
 }

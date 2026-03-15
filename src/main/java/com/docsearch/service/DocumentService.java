@@ -11,6 +11,8 @@ import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -93,5 +95,36 @@ public class DocumentService {
         cache.invalidateSearchCache(tenantId);
 
         return DocumentResponse.builder().id(docId).tenantId(tenantId).build();
+    }
+
+    /**
+     * Bulk create documents. Returns list of created document responses.
+     */
+    public List<DocumentResponse> bulkCreate(String tenantId, List<CreateDocumentRequest> requests) {
+        IndexCoordinates index = tenantIndex.resolveIndex(tenantId);
+
+        List<DocumentResponse> responses = new ArrayList<>();
+        for (CreateDocumentRequest req : requests) {
+            String docId = "doc_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+
+            DocumentEntity doc = DocumentEntity.builder()
+                    .id(docId)
+                    .title(req.getTitle())
+                    .content(req.getContent())
+                    .docType(req.getDocType())
+                    .tags(req.getTags())
+                    .metadata(req.getMetadata())
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
+                    .build();
+
+            esOps.save(doc, index);
+            responses.add(DocumentResponse.from(doc, tenantId));
+        }
+
+        log.info("Bulk indexed {} documents in {}", responses.size(), index.getIndexName());
+        cache.invalidateSearchCache(tenantId);
+
+        return responses;
     }
 }

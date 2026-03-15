@@ -1,41 +1,51 @@
 package com.docsearch.exception;
 
+import com.docsearch.dto.ApiResponse;
+import com.docsearch.dto.ApiResponse.ApiError;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(DocumentNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleNotFound(DocumentNotFoundException ex) {
-        return error(HttpStatus.NOT_FOUND, ex.getMessage());
+    public ResponseEntity<ApiResponse<?>> handleNotFound(DocumentNotFoundException ex) {
+        return respond(HttpStatus.NOT_FOUND, ex.getMessage(), ErrorCode.DOCUMENT_NOT_FOUND);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
-        Map<String, String> fields = new HashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(e ->
-                fields.put(e.getField(), e.getDefaultMessage()));
-        return ResponseEntity.badRequest().body(Map.of("error", "Validation failed", "fields", fields));
+    public ResponseEntity<ApiResponse<?>> handleValidation(MethodArgumentNotValidException ex) {
+        List<ApiError> errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(e -> ApiError.builder()
+                        .code(ErrorCode.VALIDATION_ERROR.getCode())
+                        .description(e.getField() + ": " + e.getDefaultMessage())
+                        .build())
+                .collect(Collectors.toList());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.failure("Validation failed", errors));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
+    public ResponseEntity<ApiResponse<?>> handleGeneric(Exception ex) {
         log.error("Unhandled exception: {}", ex.getMessage(), ex);
-        return error(HttpStatus.INTERNAL_SERVER_ERROR, "Internal error");
+        return respond(HttpStatus.INTERNAL_SERVER_ERROR, "Internal error", ErrorCode.INTERNAL_ERROR);
     }
 
-    private ResponseEntity<Map<String, Object>> error(HttpStatus status, String message) {
+    private ResponseEntity<ApiResponse<?>> respond(HttpStatus status, String message, ErrorCode errorCode) {
         return ResponseEntity.status(status).body(
-                Map.of("error", message, "status", status.value(), "timestamp", Instant.now().toString()));
+                ApiResponse.failure(message, List.of(
+                        ApiError.builder()
+                                .code(errorCode.getCode())
+                                .description(errorCode.getDescription())
+                                .build()
+                )));
     }
 }

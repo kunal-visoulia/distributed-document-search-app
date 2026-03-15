@@ -1,5 +1,6 @@
 package com.docsearch.controller;
 
+import com.docsearch.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,7 @@ public class HealthController {
 
     @Operation(summary = "Health check with dependency status")
     @GetMapping("/api/v1/health")
-    public ResponseEntity<Map<String, Object>> health() {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> health() {
         Map<String, Object> deps = new LinkedHashMap<>();
         boolean allHealthy = true;
 
@@ -40,12 +41,17 @@ public class HealthController {
         if (!"healthy".equals(((Map<?, ?>) deps.get("redis")).get("status")))
             allHealthy = false;
 
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("status", allHealthy ? "healthy" : "degraded");
-        response.put("uptimeSeconds", ManagementFactory.getRuntimeMXBean().getUptime() / 1000);
-        response.put("dependencies", deps);
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("serviceStatus", allHealthy ? "healthy" : "degraded");
+        data.put("uptimeSeconds", ManagementFactory.getRuntimeMXBean().getUptime() / 1000);
+        data.put("dependencies", deps);
 
-        return allHealthy ? ResponseEntity.ok(response) : ResponseEntity.status(503).body(response);
+        if (allHealthy) {
+            return ResponseEntity.ok(ApiResponse.success("All dependencies healthy", data));
+        } else {
+            return ResponseEntity.status(503)
+                    .body(ApiResponse.success("Service degraded", data));
+        }
     }
 
     private Map<String, Object> checkOpenSearch() {
