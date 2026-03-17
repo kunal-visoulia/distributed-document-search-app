@@ -138,6 +138,46 @@ curl "http://localhost:8080/api/v1/search?q=revenue+growth&tenant=tenant-acme" \
 }
 ```
 
+```json
+{
+  "query": {
+    "bool": {
+      "must": [{
+        "multi_match": {
+          "query": "revenue growth",
+          "fields": ["title^3", "content"],
+          "fuzziness": "AUTO",
+          "prefix_length": 2
+        }
+      }]
+    }
+  },
+  "highlight": {
+    "fields": {
+      "title": { "number_of_fragments": 1 },
+      "content": { "fragment_size": 200, "number_of_fragments": 3 }
+    },
+    "pre_tags": ["<em>"], "post_tags": ["</em>"]
+  },
+  "aggregations": {
+    "doc_types": { "terms": { "field": "docType", "size": 20 } },
+    "tags": { "terms": { "field": "tags", "size": 50 } }
+  },
+  "_source": { "excludes": ["content"] },
+  "size": 20
+}
+```
+
+**What each part does:**
+
+- `multi_match` on `title^3, content` → searches both fields, title matches score 3x higher
+- `fuzziness: AUTO` → edit distance 1 for 3-5 char terms, 2 for 6+ chars. "revnue" matches "revenue"
+- `prefix_length: 2` → first 2 characters must match exactly. Prevents "a" from fuzzy-matching everything
+- `highlight` → OpenSearch returns matched terms wrapped in `<em>` tags
+- `aggregations` → counts documents per docType and per tag (faceted search)
+- `_source excludes content` → don't send the full content field back, saves bandwidth
+- `size: 20` → return top 20 results
+
 ### 4. Search with Typo (Fuzzy Matching)
 ```bash
 curl "http://localhost:8080/api/v1/search?q=revnue&tenant=tenant-acme" \
